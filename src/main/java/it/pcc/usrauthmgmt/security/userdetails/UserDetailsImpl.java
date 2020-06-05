@@ -1,14 +1,16 @@
 package it.pcc.usrauthmgmt.security.userdetails;
 
 import java.util.Collection;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import it.pcc.usrauthmgmt.usr.persistence.model.Role;
 import it.pcc.usrauthmgmt.usr.persistence.model.User;
 
 public class UserDetailsImpl implements UserDetails{
@@ -33,11 +35,8 @@ public class UserDetailsImpl implements UserDetails{
 	private Collection<? extends GrantedAuthority> authorities;
 	
 	public static UserDetailsImpl build(User user) {
-		List<GrantedAuthority> authorities = user.getRoles().stream()
-				.map(role -> new SimpleGrantedAuthority(role.getName()))
-				.collect(Collectors.toList());
+		Set<GrantedAuthority> authorities = getAuthorities(user);
 		
-
 		return new UserDetailsImpl(
 				user.getUserId(), 
 				user.getUsername(), 
@@ -46,6 +45,15 @@ public class UserDetailsImpl implements UserDetails{
 				user.getActive(),
 				user.getLocale(),
 				authorities);
+	}
+	
+	private static Set<GrantedAuthority> getAuthorities(User user) {
+		Set<GrantedAuthority> authorities = new HashSet<>();
+		for (Role role : user.getRoles()) {
+			authorities.add(new SimpleGrantedAuthority(role.getName()));
+			authorities.addAll(role.getPrivileges().stream().map(p -> new SimpleGrantedAuthority(p.getName())).collect(Collectors.toSet()));
+		}
+		return authorities;
 	}
 	
 
@@ -60,6 +68,7 @@ public class UserDetailsImpl implements UserDetails{
 		this.locale = locale;
 		this.authorities = authorities;
 	}
+	
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {

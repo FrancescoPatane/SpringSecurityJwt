@@ -2,11 +2,14 @@ package it.pcc.usrauthmgmt.auth.jwt;
 
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import io.jsonwebtoken.ExpiredJwtException;
@@ -34,14 +37,21 @@ public class JwtUtil {
 
 		return Jwts.builder()
 				.setSubject((userPrincipal.getUsername()))
+				.addClaims(this.createClaims(userPrincipal))
 				.setIssuedAt(new Date())
 				.setExpiration(new Date((new Date()).getTime() + jwtExpiration))
 				.signWith(SignatureAlgorithm.HS512, jwtSecret)
 				.compact();
 	}
 	
-
-
+	public Map<String, Object> createClaims(UserDetails principal){
+		Map<String, Object> claims = new HashMap<>();
+		claims.put("authorities", principal.getAuthorities());
+		return claims;
+	}
+	
+	
+	
 	public String getUserNameFromJwtToken(String token) {
 		return Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token).getBody().getSubject();
 	}
